@@ -13,6 +13,7 @@ class WidgetRequest:
     description: str | None = None
     other_attributes: list[dict] = field(default_factory=list)
 
+
 class InvalidRequestError(Exception):
     pass
 
