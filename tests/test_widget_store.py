@@ -20,9 +20,11 @@ class TestS3WidgetStore:
         self.s3.create_bucket(Bucket=BUCKET)
         self.store = S3WidgetStore(self.s3, BUCKET)
 
+
     def read_widget(self, key):
         body = self.s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
         return json.loads(body)
+
 
     def test_create_all_attributes(self):
         self.store.create(make_request())
@@ -63,8 +65,10 @@ class TestDynamoWidgetStore:
         )
         self.store = DynamoWidgetStore(self.table)
 
+
     def read_item(self, widget_id):
         return self.table.get_item(Key={"id": widget_id})["Item"]
+
 
     def test_create_all_attributes(self):
         self.store.create(make_request())
