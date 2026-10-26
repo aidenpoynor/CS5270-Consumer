@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
-from consumer.models import parse_request
+import logging
+from consumer.models import parse_request, InvalidRequestError
+
+logger = logging.getLogger(__name__)
 
 class RequestSource(ABC):
     @abstractmethod
@@ -18,6 +21,11 @@ class S3RequestSource(RequestSource):
             key = response["Contents"][0]["Key"]
             body = self.s3_client.get_object(Bucket=self.bucket, Key=key)["Body"].read()
             self.s3_client.delete_object(Bucket=self.bucket, Key=key)
-            return parse_request(body)
+            logger.info(f"Retrieved and deleted request {key} from s3://{self.bucket}")
+            try:
+                return parse_request(body)
+            except InvalidRequestError as e:
+                logger.warning(f"Request {key} from s3://{self.bucket} could not be parsed: {e}")
+                raise
 
         return None

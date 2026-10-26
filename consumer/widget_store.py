@@ -27,7 +27,7 @@ class S3WidgetStore(WidgetStore):
         body = json.dumps({"id": request.widget_id, "owner": request.owner, "label": request.label, 
                            "description": request.description, "otherAttributes": request.other_attributes})
         self.s3_client.put_object(Bucket=self.bucket, Key=key, Body=body)
-        logger.info(f"Created widget {request.widget_id} in S3")
+        logger.info(f"Created widget {request.widget_id} at s3://{self.bucket}/{key}")
 
 
     def update(self, request):
@@ -57,7 +57,7 @@ class DynamoWidgetStore(WidgetStore):
             widget["description"] = request.description
 
         self.table.put_item(Item=widget)
-        logger.info(f"Created widget {request.widget_id} in DynamoDB")
+        logger.info(f"Created widget {request.widget_id} in DynamoDB table {self.table.name}")
 
 
     def update(self, request):
