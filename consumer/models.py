@@ -12,6 +12,7 @@ class WidgetRequest:
     label: str | None = None
     description: str | None = None
     other_attributes: list[dict] = field(default_factory=list)
+    receipt_handle: str | None = None
 
 
 class InvalidRequestError(Exception):
