@@ -55,6 +55,16 @@ class TestModels:
         )
 
 
+    def test_receipt_handle_not_read_from_body(self):
+        raw = json.dumps({
+            "type":"create","requestId":"r1","widgetId":"w1","owner":"Mary Matthews",
+            "receipt_handle": "rh1"
+        })
+
+        req = parse_request(raw)
+        assert req.receipt_handle is None
+
+
     @pytest.mark.parametrize("missing_key", ["type", "requestId", "widgetId", "owner"])
     def test_missing_required(self, missing_key):
         data = {
