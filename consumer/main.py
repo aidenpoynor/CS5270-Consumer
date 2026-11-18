@@ -2,7 +2,7 @@ import logging, os, time
 import boto3
 from consumer.cli import parse_args
 from consumer.models import InvalidRequestError
-from consumer.request_source import S3RequestSource
+from consumer.request_source import S3RequestSource, SQSRequestSource
 from consumer.widget_store import S3WidgetStore, DynamoWidgetStore
 from consumer.processor import RequestProcessor
 
@@ -12,17 +12,26 @@ def main(argv=None):
     args = parse_args(argv)
     setup_logging()
     logger.info(f"Starting consumer: storage={args.storage}, request_bucket={args.request_bucket}, "
-                f"widget_bucket={args.widget_bucket}, table={args.table}, region={args.region}, "
-                f"profile={args.profile}, poll_interval={args.poll_interval}ms, max_idle_polls={args.max_idle_polls}")
+                f"request_queue={args.request_queue}, widget_bucket={args.widget_bucket}, table={args.table}, "
+                f"region={args.region}, profile={args.profile}, poll_interval={args.poll_interval}ms, "
+                f"max_idle_polls={args.max_idle_polls}")
     try:
         session = boto3.Session(profile_name=args.profile, region_name=args.region)
-        source = S3RequestSource(session.client("s3"), args.request_bucket)
+        source = build_source(args, session)
         store = build_store(args, session)
         processor = RequestProcessor(store)
         run(source, processor, args.poll_interval, args.max_idle_polls)
     except Exception:
         logger.exception("Consumer stopped due to an unexpected error")
         raise
+
+
+def build_source(args, session):
+    if args.request_queue is not None:
+        sqs = session.client("sqs")
+        queue_url = sqs.get_queue_url(QueueName=args.request_queue)["QueueUrl"]
+        return SQSRequestSource(sqs, queue_url)
+    return S3RequestSource(session.client("s3"), args.request_bucket)
 
 
 def setup_logging(log_file="logs/consumer.log"):
@@ -65,6 +74,8 @@ def run(source, processor, poll_interval_ms=100, max_idle_polls=None, sleep=time
                 processed += 1
             except Exception:
                 logger.exception(f"Failed to process request {request.request_id}")
+
+            source.acknowledge(request)
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
 

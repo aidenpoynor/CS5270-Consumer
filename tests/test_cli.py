@@ -7,7 +7,7 @@ class TestCli:
         args = parse_args(["-s", "s3", "-rb", "b2", "-wb", "b3"])
 
         assert args == Namespace(
-            storage="s3", request_bucket="b2", widget_bucket="b3",
+            storage="s3", request_bucket="b2", request_queue=None, widget_bucket="b3",
             table="widgets", region="us-east-1", profile="default",
             poll_interval=100, max_idle_polls=None,
         )
@@ -17,7 +17,17 @@ class TestCli:
         args = parse_args(["-s", "dynamodb", "-rb", "b2"])
 
         assert args == Namespace(
-            storage="dynamodb", request_bucket="b2", widget_bucket=None,
+            storage="dynamodb", request_bucket="b2", request_queue=None, widget_bucket=None,
+            table="widgets", region="us-east-1", profile="default",
+            poll_interval=100, max_idle_polls=None,
+        )
+
+
+    def test_correct_sqs_args(self):
+        args = parse_args(["-s", "dynamodb", "-rq", "cs5270-requests"])
+
+        assert args == Namespace(
+            storage="dynamodb", request_bucket=None, request_queue="cs5270-requests", widget_bucket=None,
             table="widgets", region="us-east-1", profile="default",
             poll_interval=100, max_idle_polls=None,
         )
@@ -28,7 +38,7 @@ class TestCli:
                            "--poll-interval", "250", "--max-idle-polls", "5"])
 
         assert args == Namespace(
-            storage="dynamodb", request_bucket="b2", widget_bucket=None,
+            storage="dynamodb", request_bucket="b2", request_queue=None, widget_bucket=None,
             table="t", region="us-west-2", profile="cs5260",
             poll_interval=250, max_idle_polls=5,
         )
@@ -49,9 +59,14 @@ class TestCli:
             parse_args(["-rb", "b2"])
 
 
-    def test_no_request_bucket(self):
+    def test_no_request_source(self):
         with pytest.raises(SystemExit):
             parse_args(["-s", "s3", "-wb", "b3"])
+
+
+    def test_both_request_sources(self):
+        with pytest.raises(SystemExit):
+            parse_args(["-s", "s3", "-rb", "b2", "-rq", "q", "-wb", "b3"])
 
 
     def test_no_args(self):

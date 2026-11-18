@@ -1,9 +1,9 @@
 import logging
 from argparse import Namespace
 from unittest.mock import Mock, call
-from consumer.main import run, build_store
+from consumer.main import run, build_store, build_source
 from consumer.models import WidgetRequest, InvalidRequestError
-from consumer.request_source import RequestSource
+from consumer.request_source import RequestSource, S3RequestSource, SQSRequestSource
 from consumer.widget_store import S3WidgetStore, DynamoWidgetStore
 
 
@@ -95,6 +95,54 @@ class TestRun:
         errors = [r for r in caplog.records if r.levelno == logging.ERROR]
         assert len(errors) == 1
         assert "Failed to process request r1" in errors[0].getMessage()
+
+
+    def test_acknowledges_processed_request(self):
+        r1 = make_request("r1")
+        source = Mock()
+        source.next_request.side_effect = [r1, None]
+
+        run(source, self.processor, max_idle_polls=1, sleep=self.sleep)
+
+        source.acknowledge.assert_called_once_with(r1)
+
+
+    def test_acknowledges_failed_request(self):
+        r1 = make_request("r1")
+        source = Mock()
+        source.next_request.side_effect = [r1, None]
+        self.processor.process.side_effect = RuntimeError("boom")
+
+        run(source, self.processor, max_idle_polls=1, sleep=self.sleep)
+
+        source.acknowledge.assert_called_once_with(r1)
+
+
+class TestBuildSource:
+    def test_sqs_source_resolves_queue_name(self):
+        args = Namespace(request_bucket=None, request_queue="cs5270-requests")
+        session = Mock()
+        sqs = session.client.return_value
+        sqs.get_queue_url.return_value = {"QueueUrl": "https://sqs.example/cs5270-requests"}
+
+        source = build_source(args, session)
+
+        assert isinstance(source, SQSRequestSource)
+        assert source.sqs_client is sqs
+        assert source.queue_url == "https://sqs.example/cs5270-requests"
+        session.client.assert_called_once_with("sqs")
+        sqs.get_queue_url.assert_called_once_with(QueueName="cs5270-requests")
+
+
+    def test_s3_source(self):
+        args = Namespace(request_bucket="b2", request_queue=None)
+        session = Mock()
+
+        source = build_source(args, session)
+
+        assert isinstance(source, S3RequestSource)
+        assert source.bucket == "b2"
+        session.client.assert_called_once_with("s3")
 
 
 class TestBuildStore:

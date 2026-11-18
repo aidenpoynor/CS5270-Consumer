@@ -9,6 +9,8 @@ class RequestSource(ABC):
     @abstractmethod
     def next_request(self):
         """Return the next request, or None if none are available. Raises InvalidRequestError if a request can't be parsed."""
+    def acknowledge(self, request):
+        """Mark a request as handled so the source will not return it again."""
 
 
 class S3RequestSource(RequestSource):

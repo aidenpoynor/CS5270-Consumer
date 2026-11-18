@@ -3,7 +3,11 @@ import argparse
 def build_parser():
     parser = argparse.ArgumentParser(description="Widget request consumer", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-s", "--storage", choices=["s3", "dynamodb"], required=True, help="Where to store widgets")
-    parser.add_argument("-rb", "--request-bucket", required=True, help="Where requests are received from")
+
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("-rb", "--request-bucket", help="S3 bucket where requests are received from")
+    source.add_argument("-rq", "--request-queue", help="SQS queue name where requests are received from")
+
     parser.add_argument("-wb", "--widget-bucket", help="What bucket to store widgets in when using s3 as storage")
     parser.add_argument("-t", "--table", default="widgets", help="What dynamo table to store widgets in when using dynamodb as storage")
     parser.add_argument("-r", "--region", default="us-east-1", help="AWS region")
