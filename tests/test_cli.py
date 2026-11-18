@@ -8,7 +8,7 @@ class TestCli:
 
         assert args == Namespace(
             storage="s3", request_bucket="b2", request_queue=None, widget_bucket="b3",
-            table="widgets", region="us-east-1", profile="default",
+            table="widgets", region="us-east-1", profile=None,
             poll_interval=100, max_idle_polls=None,
         )
 
@@ -18,7 +18,7 @@ class TestCli:
 
         assert args == Namespace(
             storage="dynamodb", request_bucket="b2", request_queue=None, widget_bucket=None,
-            table="widgets", region="us-east-1", profile="default",
+            table="widgets", region="us-east-1", profile=None,
             poll_interval=100, max_idle_polls=None,
         )
 
@@ -28,7 +28,7 @@ class TestCli:
 
         assert args == Namespace(
             storage="dynamodb", request_bucket=None, request_queue="cs5270-requests", widget_bucket=None,
-            table="widgets", region="us-east-1", profile="default",
+            table="widgets", region="us-east-1", profile=None,
             poll_interval=100, max_idle_polls=None,
         )
 
